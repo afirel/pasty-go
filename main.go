@@ -1,6 +1,7 @@
 package main
 
 import (
+  "os"
   "fmt"
   "net/http"
   "github.com/gorilla/mux"
@@ -26,7 +27,7 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   }
 
   params := &s3.PutObjectInput {
-    Bucket: aws.String("pasty-go"),
+    Bucket: aws.String(os.Getenv("AWS_S3_BUCKET")),
     Key: aws.String("Test"),
     Body: bytes.NewReader([]byte(payload)),
   }
