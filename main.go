@@ -7,9 +7,11 @@ import (
   "crypto/md5"
   "encoding/hex"
   "github.com/gorilla/mux"
+  "io"
   "io/ioutil"
   "bytes"
   "github.com/aws/aws-sdk-go/aws"
+  "github.com/aws/aws-sdk-go/aws/awserr"
   "github.com/aws/aws-sdk-go/aws/session"
   "github.com/aws/aws-sdk-go/service/s3"
 )
@@ -24,7 +26,7 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   payload, err := ioutil.ReadAll(r.Body)
 
   if err != nil {
-    handleError(err, w)
+    handleError(err, w, http.StatusInternalServerError)
     return
   }
 
@@ -41,7 +43,7 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   resp, err := svc.PutObject(params)
 
   if err != nil {
-    handleError(err, w)
+    handleError(err, w, http.StatusInternalServerError)
     return
   }
 
@@ -57,16 +59,41 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "%s", url)
 }
 
-func handleError(err error, w http.ResponseWriter) {
+func SnippetHandler(w http.ResponseWriter, r *http.Request) {
+  id := mux.Vars(r)["id"]
+
+  svc := s3.New(session.New())
+  params := &s3.GetObjectInput {
+    Bucket: aws.String(os.Getenv("AWS_S3_BUCKET")),
+    Key: aws.String(id),
+  }
+  resp, err := svc.GetObject(params)
+  if err != nil {
+    if awsErr, ok := err.(awserr.Error); ok {
+      if awsErr.Code() == "NoSuchKey" {
+        handleError(err, w, http.StatusNotFound)
+      } else {
+        handleError(err, w, http.StatusInternalServerError)
+      }
+    } else {
+      handleError(err, w, http.StatusInternalServerError)
+    }
+    return
+  }
+  fmt.Println(resp)
+  io.Copy(w, resp.Body)
+}
+
+func handleError(err error, w http.ResponseWriter, code int) {
   fmt.Println(err.Error())
-  http.Error(w, err.Error(), http.StatusInternalServerError)
+  http.Error(w, err.Error(), code)
 }
 
 func main() {
   r := mux.NewRouter()
   r.HandleFunc("/", HomeHandler).Methods("GET")
   r.HandleFunc("/snippet", NewSnippetHandler).Methods("POST")
-  //r.HandleFunc("/snippet", SnippetHandler).Methods("GET")
+  r.HandleFunc("/snippet/{id}", SnippetHandler).Methods("GET")
 
   http.Handle("/", r)
   http.ListenAndServe(":8080", nil)
