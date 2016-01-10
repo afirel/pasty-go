@@ -21,9 +21,7 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   payload, err := ioutil.ReadAll(r.Body)
 
   if err != nil {
-    // Print the error, cast err to awserr.Error to get the Code and
-    // Message from an error.
-    fmt.Println(err.Error())
+    handleError(err, w)
     return
   }
 
@@ -36,13 +34,16 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   resp, err := svc.PutObject(params)
 
   if err != nil {
-    // Print the error, cast err to awserr.Error to get the Code and
-    // Message from an error.
-    fmt.Println(err.Error())
+    handleError(err, w)
     return
   }
 
   fmt.Println(resp)
+}
+
+func handleError(err error, w http.ResponseWriter) {
+  fmt.Println(err.Error())
+  http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
 func main() {
