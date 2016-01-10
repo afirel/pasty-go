@@ -50,13 +50,15 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   fmt.Println(resp)
   fmt.Println(md5sum)
 
-  // construct URL to new object
+  fmt.Fprintf(w, "%s", urlFor(md5sum, r))
+}
+
+func urlFor(objectId string, r *http.Request) string {
   var prefix = os.Getenv("URL_PREFIX")
   if prefix == "" {
     prefix = fmt.Sprintf("http://%s", r.Host)
   }
-  url := fmt.Sprintf("%s/snippet/%s", prefix, md5sum)
-  fmt.Fprintf(w, "%s", url)
+  return fmt.Sprintf("%s/snippet/%s", prefix, objectId)
 }
 
 func SnippetHandler(w http.ResponseWriter, r *http.Request) {
