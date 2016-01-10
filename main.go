@@ -96,5 +96,5 @@ func main() {
   r.HandleFunc("/snippet/{id}", SnippetHandler).Methods("GET")
 
   http.Handle("/", r)
-  http.ListenAndServe(":8080", nil)
+  http.ListenAndServe(":80", nil)
 }
