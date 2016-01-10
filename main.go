@@ -4,6 +4,8 @@ import (
   "os"
   "fmt"
   "net/http"
+  "crypto/md5"
+  "encoding/hex"
   "github.com/gorilla/mux"
   "io/ioutil"
   "bytes"
@@ -26,9 +28,13 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  hasher := md5.New()
+  hasher.Write([]byte(payload))
+  md5sum := hex.EncodeToString(hasher.Sum(nil))
+
   params := &s3.PutObjectInput {
     Bucket: aws.String(os.Getenv("AWS_S3_BUCKET")),
-    Key: aws.String("Test"),
+    Key: aws.String(md5sum),
     Body: bytes.NewReader([]byte(payload)),
   }
 
@@ -40,6 +46,15 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   }
 
   fmt.Println(resp)
+  fmt.Println(md5sum)
+
+  // construct URL to new object
+  var prefix = os.Getenv("URL_PREFIX")
+  if prefix == "" {
+    prefix = fmt.Sprintf("http://%s", r.Host)
+  }
+  url := fmt.Sprintf("%s/snippet/%s", prefix, md5sum)
+  fmt.Fprintf(w, "%s", url)
 }
 
 func handleError(err error, w http.ResponseWriter) {
