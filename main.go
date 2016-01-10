@@ -30,13 +30,11 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  hasher := md5.New()
-  hasher.Write([]byte(payload))
-  md5sum := hex.EncodeToString(hasher.Sum(nil))
+  objectId := md5sum(payload)
 
   params := &s3.PutObjectInput {
     Bucket: aws.String(os.Getenv("AWS_S3_BUCKET")),
-    Key: aws.String(md5sum),
+    Key: aws.String(objectId),
     Body: bytes.NewReader([]byte(payload)),
   }
 
@@ -48,9 +46,15 @@ func NewSnippetHandler(w http.ResponseWriter, r *http.Request) {
   }
 
   fmt.Println(resp)
-  fmt.Println(md5sum)
+  fmt.Println(objectId)
 
-  fmt.Fprintf(w, "%s", urlFor(md5sum, r))
+  fmt.Fprintf(w, "%s", urlFor(objectId, r))
+}
+
+func md5sum(payload []byte) string {
+  hasher := md5.New()
+  hasher.Write(payload)
+  return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func urlFor(objectId string, r *http.Request) string {
