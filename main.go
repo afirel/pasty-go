@@ -62,7 +62,7 @@ func urlFor(objectId string, r *http.Request) string {
   if prefix == "" {
     prefix = fmt.Sprintf("http://%s", r.Host)
   }
-  return fmt.Sprintf("%s/snippet/%s", prefix, objectId)
+  return fmt.Sprintf("%s/%s", prefix, objectId)
 }
 
 func SnippetHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +98,8 @@ func handleError(err error, w http.ResponseWriter, code int) {
 func main() {
   r := mux.NewRouter()
   r.HandleFunc("/", HomeHandler).Methods("GET")
-  r.HandleFunc("/snippet", NewSnippetHandler).Methods("POST")
-  r.HandleFunc("/snippet/{id}", SnippetHandler).Methods("GET")
+  r.HandleFunc("/", NewSnippetHandler).Methods("POST")
+  r.HandleFunc("/{id}", SnippetHandler).Methods("GET")
 
   http.Handle("/", r)
   http.ListenAndServe(":80", nil)
